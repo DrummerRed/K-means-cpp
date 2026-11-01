@@ -37,8 +37,9 @@ void Menu()                                     // Главное меню пр�
             if (switcher == 1)
                 Help();
 
-            // if (switcher == 2)
-                // Menu_start_work();
+            if (switcher == 2)
+                // input_file_name();
+                Menu_start_work();
             
             if (switcher == 3)
                 flag_esc = true;
@@ -99,9 +100,175 @@ void Help()             // Функция работы пункта меню "П
     }
 }
 
+void Menu_start_work()                                  // Раздел меню "Начать работу" 
+{
+    string file_name = input_file_name();
+
+    if (file_name != "")
+    {
+        clear_and_print();
+        int features = get_features(file_name);
+        if (features > 0)
+        {
+            printw("Файл \"%s\" успешно считан.\n", file_name.c_str());
+            printw("Количество входных признаков: %d\n", features);
+            // Количество примеров: ...
+            // Введите количество групп для разбиения данных... групп <= примеров
+            // или (для разбиения примеров на группы введите кол-во групп...)
+            getch();                    ///////
+            getch();
+        }
+    }
+}
+
+string input_file_name()                    // Ввод названия входгного файла
+{                                           // Возвращает имя входного файла, если оно корректно
+    bool flag_esc = false;                  // Иначе возвращает пустую строку
+    string file_name;                       // При нажатии Esc также возвращает пустую строку
+    int diagnostic_message = 0;
+    
+    while(!flag_esc)
+    {
+        clear_and_print();
+        if (diagnostic_message != 0)
+            print_message(diagnostic_message);
+
+        printw("Введите название файла: ");
+        file_name = input_string(&flag_esc);
+
+        if (file_name != "")
+        {
+            int checker = file_checker(file_name);
+            if (checker == 0)
+                flag_esc = true;
+            
+            else
+                diagnostic_message = checker; 
+        }
+    }
+
+    if (diagnostic_message != 0)
+        file_name = "";
+
+    return file_name;
+}
+
+void print_message(int message)                           // Вывод диагностического сообщения
+{
+    if (message == 1)
+        printw("Данный файл не обнаружен!\n");
+    else if (message == 2)
+        printw("Данный файл пуст! Выберите другой файл.\n");
+}
+
 void clear_and_print()                      // Вывод подсказки пользователя на экран
 {
     clear();
     printw("Для возвращения нажмите Esc\n");
     printw("---------------------------\n\n");
+}
+
+string input_string(bool* flag_esc, string* arrows)    // Ввод строки
+{                                                     // Возвращает введенную строку при корректном вводе
+    string str = "";                                  // При выходе по Esc возвращает пустую строку
+    int x, y;
+    noecho();
+    curs_set(1);
+    while(true)
+    {
+        refresh();          /////////
+        int ch = getch();
+        if (ch == KEY_BACKSPACE)                // Удаление символа
+        {
+            if (str != "")
+            {
+                int len = str.length();
+                if (len > 1)
+                {
+                    unsigned char first = str[len - 2];
+                    unsigned char second = str[len - 1];
+
+                    if (workaround(first, second) == 1)       
+                    {
+                        str.erase(str.length()-2, 2);
+                        getyx(stdscr, y, x);                // координаты курсора на экране
+                        move(y, x-1);                       // сдвиг курсора 
+                        delch();                            // удаление символа
+                    }
+                    else                                   
+                    {
+                        str.erase(str.length()-1, 1);
+                        getyx(stdscr, y, x);                // координаты курсора на экране
+                        move(y, x-1);
+                        delch();
+                    }
+                }
+                else
+                {
+                    str.erase(str.length()-1, 1);
+                    getyx(stdscr, y, x);
+                    move(y, x-1);
+                    delch();
+                }  
+            }
+        }
+        else if (ch == ESC)              // Выход по ESC
+        {
+            *flag_esc = true;
+            break;
+        }
+        else if (ch == ENTER)              // Выход при нажатии Enter
+            break;
+
+        else if (((ch == KEY_RIGHT) || (ch == KEY_LEFT)) && (arrows != nullptr))         // нажатие стрелок 
+        {
+            if (ch == KEY_RIGHT)
+            {
+                *arrows = "right";
+                break;
+            }
+            else if (ch == KEY_LEFT)
+            {
+                *arrows = "left";
+                break;
+            }
+        }  
+        else if ((ch == UP) || (ch == DOWN) || (ch == KEY_RIGHT) || (ch == KEY_LEFT))
+            continue;
+        else
+        {
+            str += ch;
+            addch(ch);                              // вывод символа на экран
+            if (ch >= 0xC0 && ch <= 0xDF)
+            {                                       // если двухбайтовый символ
+                int next_ch = getch();              // считываем находящийся в буфере второй байт символа
+                str += next_ch;
+                addch(next_ch);
+            }
+        }
+    }
+    noecho();
+    curs_set(0);
+    echo();
+    return str;
+}
+
+int workaround(unsigned char first, unsigned char second)              // возвращает 1, если это символ кириллицы (2 байтовый)
+{                                                    // иначе 0
+    if (first == 0xD0 && second >= 0x90 && second <= 0xAF)              // А-Я
+        return 1;
+
+    if (first == 0xD0 && second >= 0xB0 && second <= 0xBF)              // а-п
+        return 1;
+    
+    if (first == 0xD1 && second >= 0x80 && second <= 0x8F)              // р-я
+        return 1;
+
+    if (first == 0xD0 && second == 0x81)                                // Ё
+        return 1; 
+
+    if (first == 0xD1 && second == 0x91)                                // ё
+        return 1;
+        
+    return 0;
 }
