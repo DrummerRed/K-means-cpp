@@ -107,16 +107,29 @@ void Menu_start_work()                                  // Раздел меню
     if (file_name != "")
     {
         clear_and_print();
-        int features = get_features(file_name);
-        if (features > 0)
+        int samples = 0;
+        int features = get_features_count(file_name, &samples);
+        if ((features > 0) && (samples > 1))                                               // все содержимое if перенести в отдельную функцию???
         {
-            printw("Файл \"%s\" успешно считан.\n", file_name.c_str());
-            printw("Количество входных признаков: %d\n", features);
-            // Количество примеров: ...
-            // Введите количество групп для разбиения данных... групп <= примеров
-            // или (для разбиения примеров на группы введите кол-во групп...)
+            float** array_points = new float*[samples];
+            int code = file_parser(file_name, array_points, features, samples);
+
+            if (code == -1)
+                printw("Ошибка чтения! Файл содержит некорректные данные. Значения признаков должны быть записаны в виде числа!");
+                /////нужно прописать здесь выход из функции по ESC
+            else
+            {
+                printw("Файл \"%s\" успешно считан.\n\n", file_name.c_str());
+                printw("Количество входных признаков: %d\n", features);
+                printw("Количество примеров: %d\n", samples);
+                // Количество примеров: ...
+                // Введите количество групп для разбиения данных... групп <= примеров
+                // или (для разбиения примеров на группы введите кол-во групп...)
+            }
             getch();                    ///////
             getch();
+
+            delete[] array_points;
         }
     }
 }
@@ -139,11 +152,10 @@ string input_file_name()                    // Ввод названия вхо�
         if (file_name != "")
         {
             int checker = file_checker(file_name);
+            diagnostic_message = checker;
+
             if (checker == 0)
                 flag_esc = true;
-            
-            else
-                diagnostic_message = checker; 
         }
     }
 
