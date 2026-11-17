@@ -95,7 +95,7 @@ int file_parser(string file_name, float** array, int features, int samples)     
                             code = -1;
                             break;
                         }
-                        printw("%s\t", temp.c_str());
+                        // printw("%.1f\t", array[i][j]);              //////
                     }
                     else
                     {
@@ -106,7 +106,7 @@ int file_parser(string file_name, float** array, int features, int samples)     
                             code = -1;
                             break;
                         }
-                        printw("%s\n\n", str.c_str());          ////
+                        // printw("%.1f\n", array[i][j]);              //////
                     }
                 }
             }
@@ -130,5 +130,3 @@ bool is_number(string str)                              // Проверка, ч�
     return result;
 }
 
-
-// Проверить корректность записи в массив!

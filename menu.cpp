@@ -115,23 +115,96 @@ void Menu_start_work()                                  // Раздел меню
             int code = file_parser(file_name, array_points, features, samples);
 
             if (code == -1)
-                printw("Ошибка чтения! Файл содержит некорректные данные. Значения признаков должны быть записаны в виде числа!");
-                /////нужно прописать здесь выход из функции по ESC
+                message_of_error_load();
             else
             {
-                printw("Файл \"%s\" успешно считан.\n\n", file_name.c_str());
-                printw("Количество входных признаков: %d\n", features);
-                printw("Количество примеров: %d\n", samples);
-                // Количество примеров: ...
-                // Введите количество групп для разбиения данных... групп <= примеров
-                // или (для разбиения примеров на группы введите кол-во групп...)
+                int groups = set_groups_count(file_name, features, samples);
+
+                if (groups != -1)
+                {
+                    centroid_initialization(array_points, groups, features, samples);          ////
+                    // array_print(array_points, features, samples);                    // удалить
+                    debug_print(groups, features);                       // удалить
+                    getch();
+                    getch();
+                }
+                
             }
-            getch();                    ///////
-            getch();
 
             delete[] array_points;
         }
     }
+}
+
+void message_of_error_load()                        // Вывод сообщения об ошибке загрузки файла
+{
+    int ch = 0;
+
+    while (ch != ESC)
+    {
+        clear_and_print();
+        printw("Ошибка чтения! Файл содержит некорректные данные. Значения признаков должны быть записаны в виде числа!");
+        ch = getch();
+    }
+}
+
+int set_groups_count(string file_name, int features, int samples)           // Вывод сообщения о данных файла и считывание количество групп для разделения
+{                                                                           // Возвращает кол-во групп, введенных пользователем
+    bool flag_esc = false;                                                  // При нажатии Esc возвращает -1 
+    int error_input = 0;
+
+    int groups = -1;
+
+    while ((!flag_esc) && (groups < 0))
+    {
+        clear_and_print();
+        printw("Файл \"%s\" успешно считан.\n\n", file_name.c_str());
+        printw("Количество входных признаков: %d\n", features);
+        printw("Количество примеров: %d\n\n", samples);
+
+        if (error_input == 1)
+        {
+            printw("Ошибка! Некорректный ввод!\n");
+            error_input = 0;
+        }
+        else if (error_input == 2)
+        {
+            printw("Ошибка! Количество групп не должно быть больше количества примеров!\n");
+            error_input = 0;
+        }
+        else if (error_input == 3)
+        {
+            printw("Ошибка! Количество групп не может быть равно 0!\n");
+            error_input = 0;
+        }
+    
+        printw("Введите количество групп для разбиения данных: ");
+        string cash = input_string(&flag_esc);
+
+        try
+        {
+            groups = stoi(cash);
+        }
+        catch(...)
+        {
+            error_input = 1;
+            groups = -1;
+        }
+
+        if ((groups != -1) && (groups > samples))
+        {
+            error_input = 2;
+            groups = -1;
+        }
+
+        if (groups == 0)
+        {
+            error_input = 3;
+            groups = -1;
+        }
+    }
+
+    return groups;              // сократить
 }
 
 string input_file_name()                    // Ввод названия входгного файла
@@ -227,6 +300,7 @@ string input_string(bool* flag_esc, string* arrows)    // Ввод строки
         else if (ch == ESC)              // Выход по ESC
         {
             *flag_esc = true;
+            str = "";
             break;
         }
         else if (ch == ENTER)              // Выход при нажатии Enter
